@@ -12,7 +12,9 @@ public class UserAccountExistsException extends RuntimeException {
 	private static final long serialVersionUID = -575063485155861704L;
 
 	public UserAccountExistsException(String email) {
+		
 		super("A user with email '"+email+"' exists in the system.");
+		
 	}
 
 }

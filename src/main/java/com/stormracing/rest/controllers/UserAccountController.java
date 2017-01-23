@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.stormracing.entities.UserAccount;
 import com.stormracing.entities.UserAccountRepository;
+import com.stormracing.exceptions.InvalidUserAccountException;
 import com.stormracing.exceptions.UserAccountExistsException;
 import com.stormracing.exceptions.UserNotFoundException;
 
@@ -35,31 +36,42 @@ public class UserAccountController {
 
 	//@RequestMapping("/{userId}", method = RequestMethod.GET)
 	@GetMapping("/{userId}")
-	UserAccount readBookmarks(@PathVariable Long userId) {
+	UserAccount getUser(@PathVariable Long userId) {
+
+		logger.warn("validating User Account for ID: "+userId);
 		return this.validateUser(userId);
+		
 	}
 	
 	@GetMapping("/exists")
 	@ResponseBody UserAccount getUserByEmail(
 			@RequestParam(value = "email") String email){
 		
-		logger.warn("Testing for USER: "+email);
+		logger.warn("Looking up User Account for: "+email);
 		
 		return this.userAcctRepo.findByEmail(email).orElseThrow(
 				(() -> new  UserNotFoundException(email)));
+		
 	}
 	
 	@PostMapping
-	@ResponseBody UserAccount createUser( @RequestBody UserAccount user ){
+	@ResponseBody UserAccount createUser( @RequestBody UserAccount user ) {
 				
 		logger.info("Creating user...");
 		
 		try{
-			UserAccount existingUser = getUserByEmail(user.email);
-			logger.info("User with email '"+existingUser.getEmail()+"' already exists in database, canceling user account creation.");					
-			throw new UserAccountExistsException(existingUser.getEmail());
+			
+			if (user.getEmail()== null || !user.getEmail().matches("^.+@.+\\..+$")){
+				throw new InvalidUserAccountException(user.getEmail());
 			}
+			
+			UserAccount existingUser = getUserByEmail(user.email);
+			throw new UserAccountExistsException(existingUser.getEmail());
+			
+			}
+		
 		catch (UserNotFoundException notfound){
+			
 			logger.info("User is not in database, Continue creating user account.");
 		}
 		
@@ -68,10 +80,10 @@ public class UserAccountController {
 	}
 	
 	private UserAccount validateUser(Long id) {
+		
 		return this.userAcctRepo.findById(id).orElseThrow(
 				(() -> new UserNotFoundException(String.valueOf(id))));
 
 	}
-
 
 }
